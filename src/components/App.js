@@ -4,14 +4,36 @@ import CreateCard from "./CreateCard";
 import ViewCards from "./ViewCards";
 import Header from "./Header";
 
+const pushCardInLocalStorage = function (key, newCard) {
+  const presentCards = JSON.parse(localStorage.getItem(key)) || [];
+  presentCards.push(newCard);
+  setDataToLocalStorage(key, presentCards);
+  return;
+};
+function setDataToLocalStorage(key, allCards) {
+  localStorage.setItem(key, JSON.stringify(allCards));
+}
+function getDatafromLocalStorage(key) {
+  const presentCards = JSON.parse(localStorage.getItem(key)) || [];
+  return presentCards;
+}
+
 class App extends React.Component {
-  state = { allCards: [] };
+  state = { allCards: getDatafromLocalStorage("todoList") || [] };
+
+  hydrateStateWithLocalStorage = function () {
+    const localStorageData = getDatafromLocalStorage("todoList");
+    this.setState({ allCards: localStorageData });
+  };
 
   onCardSubmit = (card) => {
     const presentCards = this.state.allCards;
     presentCards.push(card);
     this.setState({ allCards: presentCards });
+    pushCardInLocalStorage("todoList", card);
+    this.hydrateStateWithLocalStorage();
   };
+
   assignId() {
     const totalCards = this.state.allCards;
     if (this.state.allCards.length) {
@@ -22,7 +44,14 @@ class App extends React.Component {
   }
 
   changeStatus = (taskNumber, cardId) => {
-    const card = this.state.allCards[cardId];
+    let card;
+    for (let i = 0; i < this.state.allCards.length; i++) {
+      const currCard = this.state.allCards[i];
+      if (currCard.id === cardId) {
+        card = this.state.allCards[i];
+        break;
+      }
+    }
     let status = card.tasks[taskNumber].done;
     const taskName = card.tasks[taskNumber].name;
     status = !status;
@@ -31,7 +60,7 @@ class App extends React.Component {
       done: status,
     };
     const updatedCard = {
-      id: card.id,
+      id: cardId,
       title: card.title,
       tasks: card.tasks,
     };
@@ -44,6 +73,8 @@ class App extends React.Component {
       }
     });
     this.setState({ allCards: updatedAllCards });
+    setDataToLocalStorage("todoList", updatedAllCards);
+    this.hydrateStateWithLocalStorage();
   };
 
   removeCard = (cardId) => {
@@ -51,6 +82,8 @@ class App extends React.Component {
       return e.id !== cardId;
     });
     this.setState({ allCards: cards });
+    setDataToLocalStorage("todoList", cards);
+    this.hydrateStateWithLocalStorage();
   };
   render() {
     let i = 0;
